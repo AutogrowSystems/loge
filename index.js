@@ -13,6 +13,13 @@ var util_1 = require('util');
 })(exports.Level || (exports.Level = {}));
 var Level = exports.Level;
 
+var pad = function(string, width, pad_char) {
+  pad_char = pad_char || '0';
+  width = width || 2;
+  string = string + '';
+  return string.length >= width ? string : new Array(width - string.length + 1).join(pad_char) + string;
+}
+
 /**
  * Formats a log message similar to the ruby Logger class
  *
@@ -21,10 +28,19 @@ var Level = exports.Level;
  * @param msg   [string] the message to log
  */
 var formatLog = function(date, level, msg) {
-    return util_1.format("%s, [%s] %-6s -- : %s\n", 
+    var timestamp = "";
+    timestamp+= date.getFullYear()+'-'
+    timestamp+= pad(date.getMonth()+1, 2, 0)+'-';
+    timestamp+= pad(date.getDate(), 2, 0)+' ';
+    timestamp+= pad(date.getHours(), 2, 0)+':';
+    timestamp+= pad(date.getMinutes(), 2, 0)+':';
+    timestamp+= pad(date.getSeconds(), 2, 0)+'.';
+    timestamp+= pad(date.getMilliseconds(), 3, 0);
+
+    return util_1.format("%s, [%s] %s -- : %s\n", 
       level[0].toUpperCase(),
-      date.toLocaleString(),
-      level.toUpperCase(),
+      timestamp,
+      pad(level.toUpperCase(), 8, ' '),
       msg
     );
 }
