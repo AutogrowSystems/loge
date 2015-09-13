@@ -51,7 +51,7 @@ var Logger = (function () {
 
     Logger.prototype.log = function (level, args) {
         if (level >= this.level) {
-            var text   = util_1.format.apply(null, args);
+            var text   = args.join(",");
             var output = this.formatter(new Date(), Level[level], text)
             this.outputStream.write(output);
         }
@@ -125,6 +125,8 @@ exports.create = function(stream, level, formatter) {
         formatter = level;
         level = "notset";
     }
+
+    level = level || "notset";
 
     return new Logger(stream, Level[level], formatter);
 };
