@@ -1,38 +1,62 @@
 /// <reference path="type_declarations/DefinitelyTyped/node/node.d.ts" />
 var util_1 = require('util');
+
 // Level is a mapping from level names (strings) to level values (numbers)
 (function (Level) {
-    Level[Level["notset"] = 0] = "notset";
-    Level[Level["debug"] = 10] = "debug";
-    Level[Level["info"] = 20] = "info";
-    Level[Level["warning"] = 30] = "warning";
-    Level[Level["error"] = 40] = "error";
+    Level[Level["notset"]   = 0]  = "notset";
+    Level[Level["debug"]    = 10] = "debug";
+    Level[Level["info"]     = 20] = "info";
+    Level[Level["warning"]  = 30] = "warning";
+    Level[Level["error"]    = 40] = "error";
     Level[Level["critical"] = 50] = "critical";
+    Level[Level["fatal"]    = 60] = "fatal";
 })(exports.Level || (exports.Level = {}));
 var Level = exports.Level;
+
 /**
-new Logger(<Stream-like Object>, <Number|String>);
+ * Formats a log message similar to the ruby Logger class
+ *
+ * @param date  [Date] the date object when this log is for
+ * @param level [string] the log level as a string
+ * @param msg   [string] the message to log
+ */
+var formatLog = function(date, level, msg) {
+    return util_1.format("%s, [%s] %-6s -- : %s\n", 
+      level[0].toUpperCase(),
+      date.toLocaleString(),
+      level.toUpperCase(),
+      msg
+    );
+}
 
-logger.stream: Stream-like object implementing .write(string)
-  E.g., any stream.Writable, like `process.stderr`
-
-logger._level: Number
-  It is set via logger.level, as either a String (resolved using
-  Logger._levels) or Number
-*/
+/**
+ * new Logger(<Stream-like Object>, <Number|String>);
+ * 
+ * logger.stream: Stream-like object implementing .write(string)
+ *   E.g., any stream.Writable, like `process.stderr`
+ * 
+ * logger._level: Number
+ *   It is set via logger.level, as either a String (resolved using
+ *   Logger._levels) or Number
+ */
 var Logger = (function () {
-    function Logger(outputStream, level) {
+    function Logger(outputStream, level, formatter) {
         if (outputStream === void 0) { outputStream = process.stderr; }
-        if (level === void 0) { level = Level.notset; }
+        if (level === void 0)        { level = Level.notset; }
+
         this.outputStream = outputStream;
-        this.level = level;
+        this.level        = level;
+        this.formatter    = formatter || formatLog;
     }
+
     Logger.prototype.log = function (level, args) {
         if (level >= this.level) {
-            var text = util_1.format.apply(null, args);
-            this.outputStream.write("[" + Level[level] + "] " + text + "\n");
+            var text   = util_1.format.apply(null, args);
+            var output = this.formatter(new Date(), Level[level], text)
+            this.outputStream.write(output);
         }
     };
+
     Logger.prototype.debug = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -40,6 +64,7 @@ var Logger = (function () {
         }
         return this.log(Level.debug, args);
     };
+
     Logger.prototype.info = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -47,6 +72,7 @@ var Logger = (function () {
         }
         return this.log(Level.info, args);
     };
+
     Logger.prototype.warning = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -54,6 +80,7 @@ var Logger = (function () {
         }
         return this.log(Level.warning, args);
     };
+
     Logger.prototype.error = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -61,6 +88,7 @@ var Logger = (function () {
         }
         return this.log(Level.error, args);
     };
+
     Logger.prototype.critical = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -68,8 +96,36 @@ var Logger = (function () {
         }
         return this.log(Level.critical, args);
     };
+
+    Logger.prototype.fatal = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i - 0] = arguments[_i];
+        }
+        return this.log(Level.fatal, args);
+    };
+
     return Logger;
 })();
+
+
 exports.Logger = Logger;
 exports.logger = new Logger();
-//// }
+
+
+/**
+ * Creates and returns a new Logger object
+ *
+ * @param outputStream [stream]   stream like object implementing .write(string) any stream.Writable, like `process.stderr`
+ * @param level        [string]   the level to log at ("debug", "fatal")
+ * @param formatter    [function] a formatter function taking date, level, and text arguments
+ */
+exports.create = function(stream, level, formatter) {
+    if ( typeof(level) == "function" ) {
+        formatter = level;
+        level = "notset";
+    }
+
+    return new Logger(stream, Level[level], formatter);
+};
+
